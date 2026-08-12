@@ -15,43 +15,32 @@ class AutonomousAgent:
     def __init__(self, model_name: str = "gemini-2.5-flash"):
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("GEMINI_API_KEY no configurada.")
+            raise ValueError("GEMINI_API_KEY no configurada en el archivo .env")
         
         self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
         
-        # Inicialización de Memoria Episódica (Vector DB)
+        # Inicialización de Memoria Episódica con ChromaDB
         self.chroma_client = chromadb.Client()
         self.memory_collection = self.chroma_client.get_or_create_collection(name="episodic_memory")
 
-    def _get_embedding(self, text: str) -> list[float]:
-        """Genera vectores con el modelo de embeddings de Google."""
-        response = self.client.models.embed_content(
-            model="text-embedding-004",
-            contents=text
-        )
-        return response.embedding.values
-
     def recall_memories(self, query: str, limit: int = 2) -> list[str]:
-        """Recupera contexto histórico relevante basado en similitud vectorial."""
+        """Recupera contexto histórico relevante utilizando la búsqueda nativa de ChromaDB."""
         if self.memory_collection.count() == 0:
             return []
         
-        query_vec = self._get_embedding(query)
         results = self.memory_collection.query(
-            query_embeddings=[query_vec],
+            query_texts=[query],
             n_results=limit
         )
         return results["documents"][0] if results["documents"] else []
 
     def remember(self, user_message: str, outcome: str, interaction_id: str):
-        """Guarda la interacción procesada en la memoria de largo plazo."""
+        """Guarda la interacción procesada directamente en ChromaDB."""
         record_text = f"Usuario: {user_message} | Resultado: {outcome}"
-        vector = self._get_embedding(record_text)
         
         self.memory_collection.add(
             ids=[interaction_id],
-            embeddings=[vector],
             documents=[record_text]
         )
 
@@ -65,7 +54,7 @@ class AutonomousAgent:
         }
 
     def reason(self, perception: dict) -> DecisionContext:
-        """Paso 2: Cognición guiada por el mensaje actual e historial recuperado."""
+        """Paso 2: Cognición impulsada por Gemini."""
         prompt = f"""
         Eres un agente autónomo de soporte técnico.
         - Mensaje actual: {perception['message']}
@@ -96,16 +85,15 @@ class AutonomousAgent:
         }
 
     def run(self, user_message: str, interaction_id: str, user_tier: str = "standard") -> dict:
-        """Bucle completo con actualización de memoria al finalizar."""
+        """Bucle completo (Percepción -> Cognición -> Acción -> Memoria)."""
         perception = self.perceive(user_message, user_tier)
         decision = self.reason(perception)
         execution = self.act(decision)
         
-        # Guardar episodio para interacciones futuras
+        # Guardar episodio en memoria
         self.remember(user_message, execution["strategy"], interaction_id)
 
         return {
             "decision": decision.model_dump(),
             "execution": execution
         }
-

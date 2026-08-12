@@ -1,57 +1,36 @@
-import datetime
+import os
+from dotenv import load_dotenv
+from src.agent import AutonomousAgent
 
-class AutonomousAgent:
-    def __init__(self, agent_name: str):
-        self.name = agent_name
-        self.memory = []
+load_dotenv()
 
-    def perceive(self, message: str, user_tier: str = "standard") -> dict:
-        """Paso 1: Captura entrada y contexto."""
-        return {
-            "message": message,
-            "user_tier": user_tier,
-            "timestamp": datetime.datetime.now().isoformat()
-        }
+def main():
+    # Inicializa el agente conectado a Gemini y ChromaDB
+    agent = AutonomousAgent()
+    
+    # 1. Primera interacción
+    query_1 = "Mi conexión de red falla intermitentemente desde hace dos días."
+    print(f"--- INTERACCIÓN 1 ---")
+    print(f"Usuario: {query_1}\n")
+    
+    result_1 = agent.run(user_message=query_1, interaction_id="session_001", user_tier="premium")
+    
+    print("Decisión:", result_1["decision"]["strategy"])
+    print("Razonamiento:", result_1["decision"]["reasoning"])
+    print("Ejecución:", result_1["execution"]["execution_logs"])
+    
+    print("\n" + "="*50 + "\n")
 
-    def reason(self, perception: dict) -> dict:
-        """Paso 2: Clasifica intención y elige estrategia."""
-        msg = perception["message"].lower()
-        
-        if "caido" in msg or "sin internet" in msg:
-            intent = "service_outage"
-            strategy = "full_autonomous_resolution"
-        else:
-            intent = "general_query"
-            strategy = "guided_autonomous_resolution"
-
-        return {
-            "intent": intent,
-            "strategy": strategy,
-            "perception": perception
-        }
-
-    def act(self, decision: dict) -> list:
-        """Paso 3: Genera y ejecuta un plan de acción."""
-        strategy = decision["strategy"]
-        if strategy == "full_autonomous_resolution":
-            plan = ["1. Diagnosticar red", "2. Reiniciar puerto", "3. Confirmar estado"]
-        else:
-            plan = ["1. Buscar en base de conocimiento", "2. Enviar respuesta"]
-        
-        # Simulación de ejecución
-        results = [f"Ejecutado: {step}" for step in plan]
-        return results
-
-    def run(self, user_message: str):
-        p = self.perceive(user_message)
-        r = self.reason(p)
-        a = self.act(r)
-        
-        # Paso 4: Guardar en memoria de sesión
-        self.memory.append({"decision": r, "action_results": a})
-        return a
+    # 2. Segunda interacción (Recupera la memoria previa)
+    query_2 = "Sigo sin señal, ¿pudieron revisar el estado del puerto?"
+    print(f"--- INTERACCIÓN 2 (Con consulta a Memoria Episódica) ---")
+    print(f"Usuario: {query_2}\n")
+    
+    result_2 = agent.run(user_message=query_2, interaction_id="session_002", user_tier="premium")
+    
+    print("Decisión:", result_2["decision"]["strategy"])
+    print("Razonamiento:", result_2["decision"]["reasoning"])
+    print("Ejecución:", result_2["execution"]["execution_logs"])
 
 if __name__ == "__main__":
-    agent = AutonomousAgent("SupportBot")
-    response = agent.run("Mi internet está caído desde la mañana")
-    print("Respuesta del Agente:", response)
+    main()
