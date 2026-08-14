@@ -1,11 +1,3 @@
-M# Autonomous Decision-Making Agent
-
-An enterprise-grade implementation of an **Autonomous Decision-Making & Memory-Augmented Agent** built with Python 3.11, the Google GenAI SDK (`gemini-2.5-flash`), and ChromaDB.
-
-This repository implements the foundational cognitive loop (**Perception → Cognition → Action → Episodic Memory**) detailed in cognitive architecture literature (such as *30 Agents Every AI Engineer Must Build*, Chapter 5). It bridges structured Large Language Model reasoning with persistent vector-backed episodic storage to achieve dynamic context adaptation across sessions.
-
----
-
 ## Architecture Overview
 
 The system models autonomous behavior through a cyclic cognitive loop. Rather than treating queries as stateless text exchanges, the agent captures contextual signals, retrieves relevant historical embeddings, performs constrained reasoning via schema-enforced JSON generation, executes targeted actions, and indexes the outcome for long-term memory continuity.
@@ -30,6 +22,13 @@ sequenceDiagram
     Act->>Act: Dispatch action plan execution pipeline
     Act->>Chroma: Ingest episode (Interaction text + Vector embedding)
     Act-->>User: Return structured execution telemetry
+```
+
+---
+
+## Core Cognitive Primitives
+
+```mermaid
 flowchart LR
     subgraph Perception [1. Perception]
         direction TB
@@ -53,4 +52,3 @@ flowchart LR
 
     Perception --> Cognition --> Action
 ```
-
