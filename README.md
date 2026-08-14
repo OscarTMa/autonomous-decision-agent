@@ -1,4 +1,4 @@
-# Autonomous Decision-Making Agent
+M# Autonomous Decision-Making Agent
 
 An enterprise-grade implementation of an **Autonomous Decision-Making & Memory-Augmented Agent** built with Python 3.11, the Google GenAI SDK (`gemini-2.5-flash`), and ChromaDB.
 
@@ -52,3 +52,5 @@ flowchart LR
     end
 
     Perception --> Cognition --> Action
+```
+
