@@ -1,52 +1,54 @@
-# autonomous-decision-agent
-# Autonomous Decision-Making Agent (Google Gemini)
+# Autonomous Decision-Making Agent
 
-Este repositorio contiene la implementación práctica del **Agente Autónomo de Toma de Decisiones** basado en la arquitectura cognitiva descrita en el Capítulo 5 de *30 Agents Every AI Engineer Must Build*.
+An enterprise-grade implementation of an **Autonomous Decision-Making & Memory-Augmented Agent** built with Python 3.11, the Google GenAI SDK (`gemini-2.5-flash`), and ChromaDB.
 
-El agente implementa el bucle continuo de **Percepción → Cognición → Acción**, utilizando modelos de la familia **Google Gemini** para la toma de decisiones estructurada.
+This repository implements the foundational cognitive loop (**Perception → Cognition → Action → Episodic Memory**) detailed in cognitive architecture literature (such as *30 Agents Every AI Engineer Must Build*, Chapter 5). It bridges structured Large Language Model reasoning with persistent vector-backed episodic storage to achieve dynamic context adaptation across sessions.
 
-## 🏗️ Arquitectura Cognitiva
+---
 
-1. **Percepción (`Perceive`)**: Captura el mensaje entrante del usuario y lo enriquece con metadatos del entorno (nivel de usuario, estado de servicios).
-2. **Cognición (`Reason`)**: Procesa el contexto utilizando `gemini-2.5-flash` con garantías de salida JSON estrictas (`Pydantic`) para determinar la intención, urgencia y estrategia de resolución.
-3. **Acción (`Act`)**: Ejecuta el plan de tareas generado por la fase de cognición.
+## Architecture Overview
 
-## 🚀 Requisitos Previos
+The system models autonomous behavior through a cyclic cognitive loop. Rather than treating queries as stateless text exchanges, the agent captures contextual signals, retrieves relevant historical embeddings, performs constrained reasoning via schema-enforced JSON generation, executes targeted actions, and indexes the outcome for long-term memory continuity.
 
-- Python 3.10+
-- Una clave de API de Google AI Studio (`GEMINI_API_KEY`)
+### Cognitive Loop Sequence
 
-## 📦 Instalación
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client / User
+    participant Perc as Perception Layer
+    participant Chroma as Episodic Memory (ChromaDB)
+    participant Core as Cognitive Engine (Gemini 2.5)
+    participant Act as Action Execution Engine
 
-```bash
-# 1. Clonar el repositorio
-git clone [https://github.com/TU_USUARIO/autonomous-decision-agent.git](https://github.com/oscartma/autonomous-decision-agent.git)
-cd autonomous-decision-agent
+    User->>Perc: Dispatch message + context metadata
+    Perc->>Chroma: Vector similarity search (Query embedding)
+    Chroma-->>Perc: Return k-nearest episodic interactions
+    Perc->>Core: Forward enriched payload (State + History + Schema)
+    Note over Core: Pydantic constrained inference<br/>(Deterministic JSON schema)
+    Core-->>Act: Output DecisionContext (Intent, Strategy, Plan)
+    Act->>Act: Dispatch action plan execution pipeline
+    Act->>Chroma: Ingest episode (Interaction text + Vector embedding)
+    Act-->>User: Return structured execution telemetry
+flowchart LR
+    subgraph Perception [1. Perception]
+        direction TB
+        RAW[User Input] --> NORM[Context Enrichment]
+        HIST[(Episodic Memory)] -.->|Recall| NORM
+    end
 
-# 2. Crear y activar entorno virtual
-python -m venv .venv
-source .venv/bin/activate  # En Windows: .venv\Scripts\Activate.ps1
+    subgraph Cognition [2. Cognition]
+        direction TB
+        NORM --> PROMPT[Contextual Prompt Builder]
+        PROMPT --> LLM[Google Gemini 2.5 Flash]
+        LLM --> SCHEMA[Pydantic Schema Validation]
+    end
 
-# 3. Instalar dependencias
-pip install -r requirements.txt
+    subgraph Action [3. Action & Feedback]
+        direction TB
+        SCHEMA --> PLAN[Action Plan Pipeline]
+        PLAN --> EXEC[Tool / Mock Execution]
+        EXEC --> STORE[(Memory Ingestion)]
+    end
 
-# 4. Configurar variables de entorno
-cp .env.example .env
-# Edita el archivo .env y agrega tu GEMINI_API_KEY
-```
-
-## 🛠️ Archivo `requirements.txt`
-
-```text
-google-genai>=0.1.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-```
-
-## 💻 Uso
-
-Ejecuta el flujo principal con:
-
-```bash
-python main.py
-```
+    Perception --> Cognition --> Action
